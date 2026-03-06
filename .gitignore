@@ -1,0 +1,6 @@
+*.csv
+*.zip
+*.tar.gz
+*.parquet
+*.h5
+*.feather
