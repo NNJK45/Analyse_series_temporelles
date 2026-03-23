@@ -1,21 +1,12 @@
 import pandas as pd
 
+
 def preprocess_data(df):
+    processed = df.copy()
 
-    # conversion timestamp -> date
-    df['Date'] = pd.to_datetime(df['Timestamp'], unit='s')
+    processed["Date"] = pd.to_datetime(processed["Timestamp"], unit="s")
+    processed.sort_values("Date", inplace=True)
+    processed.set_index("Date", inplace=True)
+    processed.drop(columns=["Timestamp"], inplace=True)
 
-    # tri chronologique
-    df.sort_values('Date', inplace=True)
-
-    # mettre Date comme index
-    df.set_index('Date', inplace=True)
-
-    # supprimer timestamp
-    df.drop(columns=['Timestamp'], inplace=True)
-
-    print(df.head())
-    print(df.shape)
-    print(df.isna().sum())
-
-    return df
+    return processed

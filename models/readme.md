@@ -1,204 +1,199 @@
-🚀 Bitcoin Price Prediction – Hybrid ML & Deep Learning
+# Bitcoin Forecast API
 
+Projet de prevision du prix du Bitcoin a partir d'un historique en donnees minute.
 
+Le depot contient :
+- un pipeline de preparation des donnees temporelles
+- plusieurs approches de prevision (`ARIMA`, `XGBoost`, `LSTM`)
+- une API `FastAPI` qui expose des previsions reelles avec `ARIMA`, `XGBoost` et un mode `hybrid`
 
-A hybrid artificial intelligence system for Bitcoin price forecasting, combining Statistical Modeling, Machine Learning, and Deep Learning.
+## Structure du projet
 
-The project compares ARIMA, XGBoost, and LSTM models and deploys predictions through a FastAPI real-time API.
+```text
+Analyse_series_temporelles/
+|-- api/
+|   `-- app.py
+|-- data/
+|   `-- btcusd_1-min_data.csv
+|-- models/
+|   `-- readme.md
+|-- notebooks/
+|-- src/
+|   |-- data_loader.py
+|   |-- evaluate.py
+|   |-- features.py
+|   |-- predictor.py
+|   |-- preprocessing.py
+|   |-- train_arima.py
+|   |-- train_lstm.py
+|   `-- train_xgboost.py
+`-- requirements.txt
+```
 
-📌 Project Overview
+## Dataset
 
-Bitcoin prices exhibit:
+Le projet utilise le fichier :
 
-High volatility
+`data/btcusd_1-min_data.csv`
 
-Non-stationary time series
+Colonnes attendues :
+- `Timestamp`
+- `Open`
+- `High`
+- `Low`
+- `Close`
+- `Volume`
 
-Sudden market shocks
+## Pipeline
 
-This project evaluates three complementary approaches:
+Le flux principal est le suivant :
 
-Approach	Model	Goal
-Statistical	ARIMA	Baseline time-series modeling
-Machine Learning	XGBoost	Predict short-term variations
-Deep Learning	LSTM	Capture long-term temporal patterns
+1. Chargement du CSV avec `src/data_loader.py`
+2. Conversion du timestamp en date dans `src/preprocessing.py`
+3. Reechantillonnage journalier et creation de variables derivees dans `src/features.py`
+4. Entrainement / prevision via :
+   - `src/train_arima.py`
+   - `src/train_xgboost.py`
+   - `src/train_lstm.py`
+5. Exposition des previsions par l'API dans `api/app.py`
 
-The final goal is to produce a robust prediction signal using a hybrid modeling strategy.
+## Modeles
 
-📸 Prediction Visualization
+### ARIMA
 
-Insert here the real vs predicted price graph.
+Modele statistique de serie temporelle applique a la serie `Log_Price`.
 
-Example:
+Usage actuel :
+- entrainement / evaluation dans `src/train_arima.py`
+- prevision API disponible via `model=arima`
 
-![Bitcoin Prediction](images/prediction_plot.png)
+### XGBoost
 
-Recommended graph:
+Modele de regression sur variables construites a partir des prix precedents :
+- retards `t-1`, `t-2`
+- moyenne mobile `SMA_7`
+- ecart-type mobile `Std_7`
+- variation moyenne recente
+- jour de la semaine
 
-Blue line → Real price
+Usage actuel :
+- entrainement / evaluation dans `src/train_xgboost.py`
+- prevision API disponible via `model=xgboost`
 
-Red line → Model prediction
+### LSTM
 
-🧠 Methodology
-1️⃣ ARIMA — Statistical Model
+Modele sequence-to-one sur la serie `Close` normalisee.
 
-Traditional time series forecasting method.
+Usage actuel :
+- entrainement / evaluation dans `src/train_lstm.py`
+- non expose dans l'API pour le moment
 
-Advantages
+## API
 
-Interpretable
+L'API FastAPI se trouve dans :
 
-Good for stationary series
+`api/app.py`
 
-Limitations
+### Lancer l'API
 
-Struggles with explosive crypto trends
+```powershell
+.\venv\Scripts\python.exe -m uvicorn api.app:app --reload
+```
 
-Sensitive to non-stationarity
+### Endpoints disponibles
 
-Conclusion: limited performance on cryptocurrency markets.
+#### `GET /`
 
-2️⃣ XGBoost — Machine Learning Model
+Retourne les informations de base de l'API.
 
-We model the price variation (Δ price) instead of the raw price.
+#### `GET /health`
 
-Advantages:
+Verifie que le service repond.
 
-Strong performance on tabular data
+Exemple de reponse :
 
-Captures micro-market movements
-
-📊 Result:
-
-65% directional accuracy
-
-3️⃣ LSTM — Deep Learning Model
-
-Long Short-Term Memory networks learn temporal dependencies in financial time series.
-
-Configuration:
-
-Sequence window: 30 days
-
-Sequential training
-
-Advantages:
-
-Captures long-term market cycles
-
-Handles non-linear dynamics
-
-🤝 Model Consensus
-
-Predictions from multiple models are combined to produce a more robust trading signal.
-
-This approach reduces the risk of relying on a single model.
-
-💻 Tech Stack
-Programming Language
-
-Python
-
-Data Science Libraries
-
-Pandas
-
-NumPy
-
-Scikit-Learn
-
-XGBoost
-
-TensorFlow / Keras
-
-Visualization
-
-Matplotlib
-
-Plotly
-
-Deployment
-
-FastAPI
-
-Uvicorn
-
-🏗️ Project Architecture
-BTC-Prediction
-│
-├── data
-│   └── bitcoin_price.csv
-│
-├── notebooks
-│   └── btc_analysis.ipynb
-│
-├── models
-│   ├── arima_model.pkl
-│   ├── xgboost_model.pkl
-│   └── lstm_model.h5
-│
-├── api
-│   └── main.py
-│
-├── images
-│   └── prediction_plot.png
-│
-├── requirements.txt
-│
-└── README.md
-🚀 API Deployment
-
-The project includes a FastAPI server providing real-time predictions.
-
-Start the API
-uvicorn main:app --reload
-
-API documentation available at:
-
-http://127.0.0.1:8000/docs
-📡 Example API Response
+```json
 {
-  "model": "XGBoost",
-  "prediction": 64521.32,
-  "confidence": 0.65
+  "status": "ok"
 }
-📈 Key Results
-Model	RMSE	Strength
-XGBoost	~1771 USD	Sensitive to short-term fluctuations
-LSTM	~3823 USD	Captures long-term patterns
-📂 Installation
-Clone the repository
-git clone https://github.com/yourusername/BTC-Prediction.git
-Install dependencies
+```
+
+#### `GET /predict`
+
+Genere une prevision reelle a partir du dataset local.
+
+Parametres :
+- `days` : nombre de jours a predire, entre `1` et `30`
+- `model` : `xgboost`, `arima` ou `hybrid`
+
+Exemple :
+
+```text
+/predict?days=7&model=hybrid
+```
+
+Exemple de reponse :
+
+```json
+{
+  "forecast_days": 7,
+  "model": "hybrid",
+  "latest_observation_date": "2026-03-05",
+  "latest_close": 50615.32,
+  "predictions": [
+    {
+      "date": "2026-03-06",
+      "close": 51102.81
+    },
+    {
+      "date": "2026-03-07",
+      "close": 51699.93
+    }
+  ],
+  "rmse": {
+    "xgboost": 1234.56,
+    "arima": 1456.78
+  }
+}
+```
+
+Remarque :
+- les valeurs numeriques ci-dessus sont un exemple de format
+- les previsions reelles dependent du contenu actuel du fichier CSV
+
+## Installation
+
+Installer les dependances :
+
+```powershell
 pip install -r requirements.txt
-▶️ Run the Analysis
+```
 
-Launch the notebook:
+Dependances principales :
+- `pandas`
+- `numpy`
+- `scikit-learn`
+- `statsmodels`
+- `xgboost`
+- `tensorflow`
+- `fastapi`
+- `uvicorn`
 
-btc_analysis.ipynb
-🔮 Future Improvements
+## Etat actuel du projet
 
-Transformer models for time series
+Ce qui fonctionne :
+- preparation des donnees
+- entrainement local ARIMA / XGBoost / LSTM
+- API de prediction avec `ARIMA`, `XGBoost` et `hybrid`
 
-Integration of macro-economic indicators
+Ce qui n'est pas encore en place :
+- sauvegarde persistante des modeles dans des fichiers `.pkl` ou `.h5`
+- endpoint API base sur `LSTM`
+- pipeline de tests automatise
+- documentation racine `README.md`
 
-Backtesting trading strategies
+## Notes
 
-Docker deployment
-
-Cloud deployment (AWS / GCP)
-
-👨‍💻 Author
-
-Kevin Gordan Njike Njingang
-
-Machine Learning Engineer
-Artificial Intelligence Researcher
-
-⭐ Support
-
-If you like this project:
-
-⭐ Star the repository
-🍴 Fork it
-📢 Share it
+- Le premier appel a `/predict` peut etre plus lent car il charge le gros CSV et calcule les previsions.
+- L'API utilise le fichier local `data/btcusd_1-min_data.csv`.
+- Le mode `hybrid` moyenne actuellement les sorties `ARIMA` et `XGBoost`.
