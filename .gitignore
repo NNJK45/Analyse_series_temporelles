@@ -4,3 +4,5 @@
 *.parquet
 *.h5
 *.feather
+__pycache__/
+*.py[cod]
